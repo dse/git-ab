@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+set -o errexit
+set -o pipefail
+set -o nounset
+shopt -s lastpipe
+
+main () {
+    declare tempfile="$(mktemp)"; tempfiles+=("${tempfile}")
+
+    # get all local and remote branch refs
+    declare -a refs
+    git --no-pager branch --all --list --no-color --no-column |
+        cut -c3- >"${tempfile}"
+    grep -v -e '/HEAD -> ' "${tempfile}" | mapfile -t refs
+
+    # collect local and remote branch ref arrays
+    declare -a locals=()
+    declare -a remotes=()
+    declare -A has_local=()
+    declare -A has_remote=()
+    declare ref local ahead behind remote
+
+    # collect data
+    for ref in "${refs[@]}" ; do
+        if [[ "${ref}" = remotes/*/* ]] ; then
+            local="${ref#remotes/*/}" # can remotes contain a slash?
+            has_remote["${local}"]=1
+            remotes+=("${ref}")
+        else
+            has_local["${ref}"]=1
+            locals+=("${ref}")
+        fi
+    done
+
+    # compare each remote and (if any) its local counterpart
+    for remote in "${remotes[@]}" ; do
+        local="${remote#remotes/*/}"
+        if (( !has_local["${local}"] )) ; then
+            echo "- - - ${remote}"
+            continue
+        fi
+        git rev-list --left-right --count "${local}"..."${remote}" |
+            read ahead behind
+        echo "${ahead} ${behind} ${local} ${remote}"
+    done
+
+    # list each local without a remote
+    for local in "${locals[@]}" ; do
+        if (( !has_remote["${local}"] )) ; then
+            echo "- - ${local} -"
+        fi
+    done
+}
+
+declare -a tempfiles=()
+trap rm_tempfiles EXIT
+rm_tempfiles () { /bin/rm -fr "${tempfiles[@]}" >&/dev/null || true ; }
+
+#------------------------------------------------------------------------------
+main "$@"
