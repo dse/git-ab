@@ -6,6 +6,8 @@ shopt -s lastpipe
 
 main () {
     declare verbose=0 print_ahead=0 print_behind=0 quiet=0
+
+    # long options in bash
     while getopts 'vabq-:' OPTION ; do
         if [[ "${OPTION}" == "-" ]] ; then
             if [[ "${OPTARG}" == *=* ]] ; then
