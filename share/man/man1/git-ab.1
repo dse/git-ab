@@ -22,7 +22,6 @@ prints "-" in place of the ahead count, behind count, and local.
 git-ab
 also finds local branches that have not yet been pushed, i.e.,
 have no corresponding remote, and
-.B git-ab
 prints "-" in place of the ahead count, behind count, and remote.
 .SH OPTIONS
 .TP
@@ -38,16 +37,12 @@ behind.
 .IP
 Do not print remote branches without a corresponding checkout in the
 working copy, nor local branches without a corresponding remote.
-.IP
-If
-.B --ahead
-is also specified, only print remotes for which there are commits
-ahead.
-.IP
-If
-.B --behind
-is also specified, only print remotes for which there are commits
-behind.
+.TP
+.BR --quiet \  --ahead
+Only print remotes for which there are commits ahead.
+.TP
+.BR --quiet \  --behind
+Only print remotes for which there are commits behind.
 .SH EXAMPLE
 Consider the following list of branches, ahead counts, and behind counts:
 .PP
