@@ -32,6 +32,7 @@ main () {
             A) if (( !if_ahead ))  ; then if_ahead=1  ; else if_ahead=$(( -if_ahead ))   ; fi ;;
             B) if (( !if_behind )) ; then if_behind=1 ; else if_behind=$(( -if_behind )) ; fi ;;
             q|quiet)  quiet=1;;
+            help) usage; exit 0;;
             *) echo "$0: illegal option -- ${OPTION}" >&2; exit 1;;
         esac
     done
@@ -120,6 +121,14 @@ main () {
         exit 1
     fi
 }
+
+usage () { cat <<EOF; }
+git-ab [-a|--ahead] [-b|--behind] [-q|--quiet] [-A|--if-ahead]
+                                               [-B|--if-behind]
+                                               [-AA|--if-not-ahead]
+                                               [-BB|--if-not-behind]
+git-ab --help
+EOF
 
 #------------------------------------------------------------------------------
 main "$@"
