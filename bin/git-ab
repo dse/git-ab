@@ -31,13 +31,10 @@ main () {
     done
     (( !(print_ahead + print_behind) )) && print_ahead=1 print_behind=1
 
-    declare tempfile="$(mktemp)"; tempfiles+=("${tempfile}")
-
     # get all local and remote branch refs
     declare -a refs
     git --no-pager branch --all --list --no-color --no-column |
-        cut -c3- >"${tempfile}"
-    grep -v -e '/HEAD -> ' "${tempfile}" | mapfile -t refs
+        cut -c3- | grep -v -e '/HEAD -> ' | mapfile -t refs
 
     # collect local and remote branch ref arrays
     declare -a locals=()
@@ -102,9 +99,6 @@ main () {
     done
 }
 
-declare -a tempfiles=()
-trap rm_tempfiles EXIT
-rm_tempfiles () { /bin/rm -fr "${tempfiles[@]}" >&/dev/null || true ; }
 
 #------------------------------------------------------------------------------
 main "$@"
