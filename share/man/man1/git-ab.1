@@ -1,0 +1,89 @@
+.\" Copyright (C), 2024  Darren Embry
+.TH git-ab 1 2024-03-09
+.SH NAME
+git-ab \- print local commit counts ahead and/or behind each remote
+.SH SYNOPSIS
+.B git-ab
+.RB [ --ahead ]
+.RB [ --behind ]
+.RB [ --quiet ]
+.SH DESCRIPTION
+.B git-ab
+finds each remote branch in your working git repository, and prints on
+a single line the number of commits the remote branch's local is ahead
+of the remote, prints the number of commits the local is behind, the
+local branch's name, and the remote's name.
+.PP
+For remote branches not checked out locally,
+.B git-ab
+prints "-" in place of the ahead count, behind count, and local.
+.PP
+For local branches that have not yet pushed, i.e., have no
+corresponding remote,
+.B git-ab
+prints "-" in place of the ahead count, behind count, and remote.
+.SH OPTIONS
+.TP
+.B --ahead
+Print only the commit counts ahead of the remote.
+.TP
+.B --behind
+Print only the commit counts behind the remote.
+.TP
+.B --quiet
+Only print remotes for which there are commits ahead and/or commits
+behind.
+.IP
+Do not print remote branches without a corresponding checkout in the
+working copy, nor local branches without a corresponding remote.
+.IP
+If
+.B --ahead
+is also specified, only print remotes for which there are commits
+ahead.
+.IP
+If
+.B --behind
+is also specified, only print remotes for which there are commits
+behind.
+.SH EXAMPLE
+Consider the following list of branches, ahead counts, and behind counts:
+.PP
+.nf
+.RS
+3 1 main remotes/origin/main
+4 2 main remotes/upstream/main
+3 0 slow-nfs-access remotes/origin/slow-nfs-access
+0 4 support-zsh remotes/origin/support-zsh
+0 0 files-outside-project-root remotes/origin/files-outside-project-root
+- - - remotes/origin/lexical-scope
+- - dynamic-scope -
+.RE
+.fi
+.PP
+.B git-ab --ahead
+would simply omit the behind count column.
+.PP
+.B git-ab --behind
+would simply omit the ahead count column.
+.PP
+.B git-ab --quiet
+would omit the last three lines from its output, as only the first
+four have ahead
+.B or
+behind counts.
+.PP
+.B git-ab --ahead --quiet
+would only print the first three lines of the above output, as those
+are the only branches with commits ahead.
+.PP
+.B git-ab --behind --quiet
+would only print the first, second, and fourth lines, as those are the
+only remotes with commits ahead.
+.SH "SEE ALSO"
+.BR git-branch (1),
+.BR git-rev-list (1)
+.SH AUTHOR
+Darren Embry <dsembry@gmail.com>
+.Nm git-ab
+.Nd
