@@ -5,10 +5,10 @@ set -o nounset
 shopt -s lastpipe
 
 main () {
-    declare verbose=0 print_ahead=0 print_behind=0 quiet=0
+    declare verbose=0 print_ahead=0 print_behind=0 quiet=0 if_ahead=0 if_behind=0
 
     # long options in bash
-    while getopts 'vabq-:' OPTION ; do
+    while getopts 'ABvabq-:' OPTION ; do
         if [[ "${OPTION}" == "-" ]] ; then
             if [[ "${OPTARG}" == *=* ]] ; then
                 OPTION="${OPTARG%%=*}"
@@ -23,13 +23,22 @@ main () {
                 [[ -v OPTARG ]] && { echo "$0: option does not take argument -- ${OPTION}"; exit 1; }
                 verbosity=$((verbosity + 1))
                 ;;
-            a|ahead)  print_ahead=1;;
-            b|behind) print_behind=1;;
+            a|ahead)             print_ahead=1;;
+            b|behind)            print_behind=1;;
+            if-ahead)            if_ahead=1;;
+            if-behind)           if_behind=1;;
+            if-not-ahead)        if_ahead=-1;;
+            if-not-behind)       if_behind=-1;;
+            A) if (( !if_ahead ))  ; then if_ahead=1  ; else if_ahead=$(( -if_ahead ))   ; fi ;;
+            B) if (( !if_behind )) ; then if_behind=1 ; else if_behind=$(( -if_behind )) ; fi ;;
             q|quiet)  quiet=1;;
             *) echo "$0: illegal option -- ${OPTION}" >&2; exit 1;;
         esac
     done
     (( !(print_ahead + print_behind) )) && print_ahead=1 print_behind=1
+
+    echo "if_ahead=$if_ahead"
+    echo "if_behind=$if_behind"
 
     # get all local and remote branch refs
     declare -a refs
@@ -55,6 +64,9 @@ main () {
         fi
     done
 
+    declare any_ahead=0
+    declare any_behind=0
+
     # compare each remote and (if any) its local counterpart
     for remote in "${remotes[@]}" ; do
         local="${remote#remotes/*/}"
@@ -70,6 +82,8 @@ main () {
         fi
         git rev-list --left-right --count "${local}"..."${remote}" |
             read ahead behind
+        if (( ahead  )) ; then any_ahead=1  ; fi
+        if (( behind )) ; then any_behind=1 ; fi
         if (( print_ahead && print_behind )) ; then
             if (( ahead || behind || !quiet )) ; then
                 echo "${ahead} ${behind} ${local} ${remote}"
@@ -97,8 +111,15 @@ main () {
             fi
         fi
     done
-}
 
+    if (( if_ahead || if_behind )) ; then
+        (( any_ahead   && if_ahead  == 1  )) && exit 0
+        (( any_behind  && if_behind == 1  )) && exit 0
+        (( !any_ahead  && if_ahead  == -1 )) && exit 0
+        (( !any_behind && if_behind == -1 )) && exit 0
+        exit 1
+    fi
+}
 
 #------------------------------------------------------------------------------
 main "$@"
