@@ -4,9 +4,9 @@
 git-ab \- print local commit counts ahead and/or behind each remote
 .SH SYNOPSIS
 .B git-ab
-.RB [ --ahead ]
-.RB [ --behind ]
-.RB [ --quiet ]
+.RB [ -a ,\  --ahead ]
+.RB [ -b ,\  --behind ]
+.RB [ -q ,\  --quiet ]
 .SH DESCRIPTION
 .B git-ab
 finds each remote branch in your working git repository, and prints on
@@ -24,13 +24,13 @@ corresponding remote,
 prints "-" in place of the ahead count, behind count, and remote.
 .SH OPTIONS
 .TP
-.B --ahead
+.BR -a ,\  --ahead
 Print only the commit counts ahead of the remote.
 .TP
-.B --behind
+.BR -b ,\  --behind
 Print only the commit counts behind the remote.
 .TP
-.B --quiet
+.BR -q ,\  --quiet
 Only print remotes for which there are commits ahead and/or commits
 behind.
 .IP
