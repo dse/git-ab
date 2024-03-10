@@ -7,6 +7,10 @@ git-ab \- print local commit counts ahead and/or behind each remote
 .RB [ -a ,\  --ahead ]
 .RB [ -b ,\  --behind ]
 .RB [ -q ,\  --quiet ]
+.RB [ -A ,\  --if-ahead ]
+.RB [ -B ,\  --if-behind ]
+.RB [ -AA ,\  --if-not-ahead ]
+.RB [ -BB ,\  --if-not-behind ]
 .SH DESCRIPTION
 .B git-ab
 finds each remote branch in your working git repository, and prints on
@@ -43,6 +47,24 @@ Only print remotes for which there are commits ahead.
 .TP
 .BR --quiet \  --behind
 Only print remotes for which there are commits behind.
+.TP
+.BR -A ,\  --if-ahead
+Exit with status code 0 (success) if there are any local branches ahead of their remotes.
+Otherwise, exit with status code 1 (failure).
+.TP
+.BR -AA ,\  -A\ -A ,\  --if-not-ahead
+Same as
+.BR --if-ahead ,
+but invert the sense of the return code.
+.TP
+.BR -B ,\  --if-behind
+Exit with status code 0 (success) if there are any local branches behind their remotes.
+Otherwise, exit with status code 1 (failure).
+.TP
+.BR -BB ,\  -B\ -B ,\  --if-not-behind
+Same as
+.BR --if-behind ,
+but invert the sense of the return code.
 .SH EXAMPLE
 Consider the following list of branches, ahead counts, and behind counts:
 .PP
