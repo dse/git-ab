@@ -25,12 +25,12 @@ main () {
                 ;;
             a|ahead)             print_ahead=1;;
             b|behind)            print_behind=1;;
-            if-ahead)            if_ahead=1;;
-            if-behind)           if_behind=1;;
-            if-not-ahead)        if_ahead=-1;;
-            if-not-behind)       if_behind=-1;;
-            A) if (( !if_ahead ))  ; then if_ahead=1  ; else if_ahead=$(( -if_ahead ))   ; fi ;;
-            B) if (( !if_behind )) ; then if_behind=1 ; else if_behind=$(( -if_behind )) ; fi ;;
+            if-ahead)            if_behind=0; if_ahead=1;;
+            if-behind)           if_ahead=0;  if_behind=1;;
+            if-not-ahead)        if_behind=0; if_ahead=-1;;
+            if-not-behind)       if_ahead=0;  if_behind=-1;;
+            A) if_behind=0; if (( !if_ahead ))  ; then if_ahead=1  ; else if_ahead=$(( -if_ahead ))   ; fi ;;
+            B) if_ahead=0;  if (( !if_behind )) ; then if_behind=1 ; else if_behind=$(( -if_behind )) ; fi ;;
             q|quiet)  quiet=1;;
             help) usage; exit 0;;
             *) echo "$0: illegal option -- ${OPTION}" >&2; exit 1;;
