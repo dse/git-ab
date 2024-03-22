@@ -38,9 +38,6 @@ main () {
     done
     (( !(print_ahead + print_behind) )) && print_ahead=1 print_behind=1
 
-    echo "if_ahead=$if_ahead"
-    echo "if_behind=$if_behind"
-
     # get all local and remote branch refs
     declare -a refs
     git --no-pager branch --all --list --no-color --no-column |
