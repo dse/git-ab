@@ -6,6 +6,7 @@ shopt -s lastpipe
 
 main () {
     declare verbose=0 print_ahead=0 print_behind=0 quiet=0 if_ahead=0 if_behind=0
+    declare human=0
 
     # long options in bash
     while getopts 'ABvabq-:' OPTION ; do
@@ -19,6 +20,8 @@ main () {
             fi
         fi
         case "${OPTION}" in
+            human)
+                human=1;;
             v|verbose|verbosity) 
                 [[ -v OPTARG ]] && { echo "$0: option does not take argument -- ${OPTION}"; exit 1; }
                 verbosity=$((verbosity + 1))
@@ -40,84 +43,131 @@ main () {
 
     (( !(print_ahead + print_behind) )) && print_ahead=1 print_behind=1
 
-    # get all local and remote branch refs
-    declare -a refs
-    git --no-pager branch --all --list --no-color --no-column |
-        cut -c3- | grep -v -e '/HEAD -> ' | mapfile -t refs
+    if (( $# == 2 )) ; then
+        A="$1"
+        B="$2"
+        compare_a_b "${A}" "${B}"
+        check_status
+    elif (( $# == 0 )) ; then
+        # get all local and remote branch refs
+        declare -a refs
+        git --no-pager branch --all --list --no-color --no-column |
+            cut -c3- | grep -v -e '/HEAD -> ' | mapfile -t refs
 
-    # collect local and remote branch ref arrays
-    declare -a locals=()
-    declare -a remotes=()
-    declare -A has_local=()
-    declare -A has_remote=()
-    declare ref local ahead behind remote
+        # collect local and remote branch ref arrays
+        declare -a locals=()
+        declare -a remotes=()
+        declare -A has_local=()
+        declare -A has_remote=()
+        declare ref local ahead behind remote
 
-    # collect data
-    for ref in "${refs[@]}" ; do
-        if [[ "${ref}" = remotes/*/* ]] ; then
-            local="${ref#remotes/*/}" # can remotes contain a slash?
-            has_remote["${local}"]=1
-            remotes+=("${ref}")
-        else
-            has_local["${ref}"]=1
-            locals+=("${ref}")
-        fi
-    done
+        # collect data
+        for ref in "${refs[@]}" ; do
+            if [[ "${ref}" = remotes/*/* ]] ; then
+                local="${ref#remotes/*/}" # can remotes contain a slash?
+                has_remote["${local}"]=1
+                remotes+=("${ref}")
+            else
+                has_local["${ref}"]=1
+                locals+=("${ref}")
+            fi
+        done
 
-    declare any_ahead=0
-    declare any_behind=0
+        declare any_ahead=0
+        declare any_behind=0
 
-    # compare each remote and (if any) its local counterpart
-    for remote in "${remotes[@]}" ; do
-        local="${remote#remotes/*/}"
-        if (( !has_local["${local}"] )) ; then
-            if (( !quiet )) ; then
-                if (( print_ahead && print_behind )) ; then
-                    echo "- - - ${remote}" 
-                else
-                    echo "- - ${remote}"
+        # compare each remote and (if any) its local counterpart
+        for remote in "${remotes[@]}" ; do
+            local="${remote#remotes/*/}"
+            if (( !has_local["${local}"] )) ; then
+                if (( !quiet )) ; then
+                    if (( print_ahead && print_behind )) ; then
+                        echo "- - - ${remote}" 
+                    else
+                        echo "- - ${remote}"
+                    fi
+                fi
+                continue
+            fi
+
+            compare_a_b "${local}" "${remote}"
+        done
+
+        # list each local without a remote
+        for local in "${locals[@]}" ; do
+            if (( !has_remote["${local}"] )) ; then
+                if (( !quiet )) ; then
+                    if (( print_ahead && print_behind )) ; then
+                        echo "- - ${local} -"
+                    else
+                        echo "- ${local} -"
+                    fi
                 fi
             fi
-            continue
-        fi
-        git rev-list --left-right --count "${local}"..."${remote}" |
-            read ahead behind
-        if (( ahead  )) ; then any_ahead=1  ; fi
-        if (( behind )) ; then any_behind=1 ; fi
-        if (( print_ahead && print_behind )) ; then
-            if (( ahead || behind || !quiet )) ; then
-                echo "${ahead} ${behind} ${local} ${remote}"
-            fi
-        elif (( print_ahead )) ; then
-            if (( ahead || !quiet )) ; then
-                echo "${ahead} ${local} ${remote}"
-            fi
-        else                    # print_behind is true
-            if (( behind || !quiet )) ; then
-                echo "${behind} ${local} ${remote}"
-            fi
-        fi
-    done
+        done
 
-    # list each local without a remote
-    for local in "${locals[@]}" ; do
-        if (( !has_remote["${local}"] )) ; then
-            if (( !quiet )) ; then
-                if (( print_ahead && print_behind )) ; then
-                    echo "- - ${local} -"
-                else
-                    echo "- ${local} -"
+        check_status
+    else
+        echo "git-ab: invalid number of arguments"
+    fi
+}
+
+compare_a_b () {
+    local A="$1"
+    local B="$2"
+    git rev-list --left-right --count "${A}"..."${B}" | read ahead behind
+    if (( ahead  )) ; then any_ahead=1  ; fi
+    if (( behind )) ; then any_behind=1 ; fi
+    if (( print_ahead && print_behind )) ; then
+        if (( ahead || behind || !quiet )) ; then
+            if (( human )) ; then
+                if (( ahead && behind )) ; then
+                    echo "${A} diverged with ${B}: ${A} ahead by ${ahead}; ${B} ahead by ${behind}"
+                elif (( ahead )) ; then
+                    echo "${A} ahead of ${B} by ${ahead}"
+                elif (( behind )) ; then
+                    echo "${A} behind ${B} by ${behind}"
+                elif (( !quiet )) ; then
+                    echo "${A} and ${B} are at the same commit"
                 fi
+            else
+                echo "${ahead} ${behind} ${A} ${B}"
             fi
         fi
-    done
+    elif (( print_ahead )) ; then
+        if (( ahead || !quiet )) ; then
+            if (( human )) ; then
+                if (( ahead )) ; then
+                    echo "${A} ahead of ${B} by ${ahead}"
+                elif (( !quiet )) ; then
+                    echo "${A} and ${B} are at the same commit"
+                fi
+            else
+                echo "${ahead} ${A} ${B}"
+            fi
+        fi
+    else                    # print_behind is true
+        if (( behind || !quiet )) ; then
+            if (( human )) ; then
+                if (( behind )) ; then
+                    echo "${A} behind ${B} by ${behind}"
+                elif (( !quiet )) ; then
+                    echo "${A} and ${B} are at the same commit"
+                fi
+            else
+                echo "${behind} ${A} ${B}"
+            fi
+        fi
+    fi
+}
 
+check_status () {
     if (( if_ahead || if_behind )) ; then
-        (( any_ahead   && if_ahead  == 1  )) && exit 0
-        (( any_behind  && if_behind == 1  )) && exit 0
-        (( !any_ahead  && if_ahead  == -1 )) && exit 0
-        (( !any_behind && if_behind == -1 )) && exit 0
-        exit 1
+        (( any_ahead   && if_ahead  == 1  )) && return 0
+        (( any_behind  && if_behind == 1  )) && return 0
+        (( !any_ahead  && if_ahead  == -1 )) && return 0
+        (( !any_behind && if_behind == -1 )) && return 0
+        return 1
     fi
 }
 
